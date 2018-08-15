@@ -60,4 +60,3 @@ You may also use the --restart switch to boot the keyboard into operating mode
 ## Troubleshooting
 
 Linux: User may need to be added to group dialout to access programming port
-
