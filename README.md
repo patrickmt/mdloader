@@ -1,3 +1,13 @@
+### tl;dr
+
+1. Plug in your keyboard.
+2. Press the reset button on your keyboard.
+3. `mdloader --list`, copy the port name, e.g. `/dev/ttyACM0`, `/dev/ttyS23`, `/dev/cu.usbmodem234411`
+4. `mdloader --port PORT_NAME --download FILE_NAME --restart`
+5. Enjoy (important)
+
+-----
+
 # Massdrop Loader
 
 Massdrop Loader is used to read firmware from and write firmware to Massdrop keyboards which utilize Microchip's SAM-BA bootloader, over the USB connection.
