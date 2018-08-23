@@ -5,7 +5,7 @@ Massdrop Loader is used to read firmware from and write firmware to Massdrop key
 ## Supported operating systems
 
 Windows XP or greater (32-bit and 64-bit versions, USB Serial driver in drv_win folder)  
-Linux x86 (32-bit and 64-bit versions)  
+Linux x86 (32-bit and 64-bit versions)
 Mac OS X  
 
 ## Supported devices
@@ -16,10 +16,10 @@ Massdrop keyboard's featuring Microchip's SAM-BA bootloader.
 
 Enter mdloader directory where Makefile is located and excute:
 
-make
+`make`
 
 This will create a build/ directory with the compiled executable.  
-Run ./build/mdloader to test.
+Run `./build/mdloader` to test.
 
 ## Usage
 ```
@@ -38,13 +38,16 @@ Usage: mdloader [options] ...
      --colw width                Hex listing column width <width> [4]
      --restart                   Restart device after successful programming
 ```
-To detect connected devices ready for programming:
+
+To detect connected keyboards ready for programming:
 
 `mdloader --list`
 
-Assume for example the listing included a device at port name THE_PORT
+If you do not see your keyboard listed, try pressing the reset button on your keyboard and try again.
 
-To write firmware to the device:
+Assume for example the listing included a device at port name `THE_PORT`
+
+To write firmware to the device and restart it:
 
 `mdloader --port THE_PORT --download new_firmware.bin --restart`
 
