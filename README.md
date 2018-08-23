@@ -40,17 +40,17 @@ Usage: mdloader [options] ...
 ```
 To detect connected devices ready for programming:
 
-mdloader --list
+`mdloader --list`
 
 Assume for example the listing included a device at port name THE_PORT
 
 To write firmware to the device:
 
-mdloader -p THE_PORT -D new_firmware.bin
+`mdloader --port THE_PORT --download new_firmware.bin --restart`
 
 To read firmware from the device:
 
-mdloader -p THE_PORT -U read_firmware.bin --addr 0x4000 --size 0x10000
+`mdloader --port THE_PORT --upload read_firmware.bin --addr 0x4000 --size 0x10000`
 
 Test mode may be used to test operations, just use the -t or --test switch.  
 Test mode also allows viewing of binary data from a read instead of writing to a file.
