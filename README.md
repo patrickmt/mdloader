@@ -1,10 +1,22 @@
 ### tl;dr
 
-1. Plug in your keyboard.
-2. Press the reset button on your keyboard.
-3. `mdloader --list`, copy the port name, e.g. `/dev/ttyACM0`, `/dev/ttyS23`, `/dev/cu.usbmodem234411`
-4. `mdloader --port PORT_NAME --download FILE_NAME --restart`
-5. Enjoy (important)
+1. Follow the instructions here to download the executable for your operating system: https://github.com/Massdrop/mdloader/releases
+
+2. Plug in your keyboard.
+
+3. Press the reset button on your keyboard.
+
+4. In your terminal, change to the directory where you downloaded the executable.
+
+5. **Windows** - Run `mdloader_windows.exe --list`. Copy the port name, e.g. `/dev/ttyACM0`, `/dev/ttyS23`, `/dev/cu.usbmodem234411`.  
+**Linux** -  Run `mdloader_linux --list`. Copy the port name as described above.  
+**Mac** - Run `mdloader_mac --list`. If you downloaded with Mac Safari, run `mdloader_mac.dms --list`. Copy the port name as described above.
+
+6. **Windows** - Run `mdloader_windows.exe --port PORT_NAME --download FILE_NAME --restart`. Replace "PORT_NAME" with the port name you copied in the previous step. Replace "FILE_NAME" with the filename of your compiled firmware.  
+**Linux** - Run `mdloader_linux --port PORT_NAME --download FILE_NAME --restart`. Replace "PORT_NAME" and "FILE_NAME" in the command as instructed above.  
+**Mac** - Run `mdloader_mac --port PORT_NAME --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --port PORT_NAME --download FILE_NAME --restart`. Replace "PORT_NAME" and "FILE_NAME" in the command as instructed above.
+
+7. Enjoy (important)
 
 -----
 
