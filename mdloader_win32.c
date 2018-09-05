@@ -24,8 +24,8 @@
 
 HANDLE gport = NULL; //Port of device
 
-#define WRITE_SIZE      4000    //Maximum bytes to write per call
-#define READ_SIZE       4000    //Maximum bytes to read per call
+#define WRITE_SIZE      500     //Maximum bytes to write per call
+#define READ_SIZE       500     //Maximum bytes to read per call
 #define READ_RETRIES    10      //Maximum read retries before fail
 
 void print_com_example(void)

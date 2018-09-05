@@ -432,7 +432,7 @@ int set_terminal_mode(void)
 //Display program version
 void display_version(void)
 {
-    printf(PROGRAM_NAME " %i.%i\n", VERSION_MAJOR, VERSION_MINOR);
+    printf(PROGRAM_NAME " %i.%02i\n", VERSION_MAJOR, VERSION_MINOR);
     printf("\n");
 }
 
