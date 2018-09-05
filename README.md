@@ -27,8 +27,8 @@ Massdrop Loader is used to read firmware from and write firmware to Massdrop key
 ## Supported operating systems
 
 Windows XP or greater (32-bit and 64-bit versions, USB Serial driver in drv_win folder)  
-Linux x86 (32-bit and 64-bit versions)
-Mac OS X  
+Linux x86 (32-bit and 64-bit versions)  
+Mac OS X
 
 ## Supported devices
 
