@@ -22,7 +22,7 @@
 
 #define PROGRAM_NAME  "Massdrop Loader"
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 1 //0-99
+#define VERSION_MINOR 2 //0-99
 
 #ifdef _WIN32
 #define INITGUID
@@ -55,10 +55,10 @@
 #define TRUE    1
 
 #ifdef _WIN32
-#define slp(x) Sleep(x)
+#define slp(ms) Sleep(ms)
 extern HANDLE gport;
 #else
-#define slp(x) usleep(x * 1000)
+#define slp(ms) usleep(ms * 1000)
 extern int gport;
 #endif
 
@@ -169,7 +169,7 @@ int test_mcu(char silent);
 int filesize(char *fname);
 int read_data(int addr, int readsize);
 int write_data(int addr, int writesize, int data);
-void list_devices(void);
+void list_devices(char *first);
 void strupper(char *str);
 void strlower(char *str);
 

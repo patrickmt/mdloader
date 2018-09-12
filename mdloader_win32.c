@@ -515,15 +515,19 @@ int config_port(void)
 }
 
 //List devices which communicate properly
-void list_devices(void)
+//If first_device is not null, store first found device and return
+void list_devices(char *first_device)
 {
     int portnum = 1;
     int portmax = 255; //Inclusive
     int portcount = 0;
     char portname[] = "COM255"; //Max buffer necessary
 
-    printf("Bootloader port listing\n");
-    printf("-----------------------------\n");
+    if (first_device == NULL)
+    {
+        printf("Bootloader port listing\n");
+        printf("-----------------------------\n");
+    }
 
     while (portnum <= portmax)
     {
@@ -532,7 +536,14 @@ void list_devices(void)
         {
             if (test_mcu(TRUE))
             {
+                if (first_device) printf("\n");
                 printf("Device port: %s (%s)\n",portname,mcu->name);
+                if (first_device != NULL)
+                {
+                    close_port(TRUE);
+                    strcpy(first_device,portname);
+                    return;
+                }
                 portcount++;
             }
             close_port(TRUE);
@@ -540,7 +551,10 @@ void list_devices(void)
         portnum++;
     }
 
-    if (portcount == 0)
-        printf("No devices found!\n");
+    if (first_device == NULL)
+    {
+        if (portcount == 0)
+            printf("No devices found!\n");
+    }
 }
 

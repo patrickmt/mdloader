@@ -14,6 +14,9 @@ OBJFILES = $(patsubst %.c,%.o,$(SRCFILES))
 OBJS = $(addprefix $(OBJDIR)/,$(OBJFILES))
 
 all: $(OBJDIR)/$(OUTNAME)
+	$(info Copying applets to ${OBJDIR}...)
+	@cp applet-*.bin $(OBJDIR)
+	$(info Done!)
 
 $(OBJDIR)/$(OUTNAME): $(OBJS)
 	$(info Creating $@...)
@@ -32,3 +35,4 @@ $(OBJS): $(OBJDIR)/%.o : %.c
 clean:
 	$(info Removing $(OBJDIR)...)
 	@rm -r -f $(OBJDIR)
+	$(info Done!)

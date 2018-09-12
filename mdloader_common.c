@@ -21,6 +21,7 @@
 
 char verbose;
 char testmode;
+char first_device;
 int restart_after_program;
 int hex_cols;
 int hex_colw;
@@ -451,6 +452,7 @@ void display_help(void)
     printf("  -h --help                      Print this help message\n");
     printf("  -v --verbose                   Print verbose messages\n");
     printf("  -V --version                   Print version information\n");
+    printf("  -f --first                     Use first found device port as programming port\n");
     printf("  -l --list                      Print valid attached devices for programming\n");
     printf("  -p --port port                 Specify programming port\n");
     printf("  -U --upload file               Read firmware from device into <file>\n");
@@ -476,6 +478,7 @@ struct option long_options[] = {
     { "help",           no_argument,        0,  'h' },
     { "version",        no_argument,        0,  'V' },
     { "list",           no_argument,        0,  'l' },
+    { "first",          no_argument,        0,  'f' },
     { "port",           required_argument,  0,  'p' },
     { "download",       required_argument,  0,  'D' },
     { "upload",         required_argument,  0,  'U' },
@@ -491,6 +494,7 @@ int main(int argc, char *argv[])
 {
     verbose = 0;
     testmode = 0;
+    first_device = 0;
     restart_after_program = 0;
     hex_cols = COLS;
     hex_colw = COLW;
@@ -499,7 +503,7 @@ int main(int argc, char *argv[])
     display_copyright();
 
     int command = CMD_NONE;
-    char portname[200] = "";
+    char portname[500] = "";
     char fname[1024] = "";
     int upload_address = 0;
     int upload_size = 0;
@@ -512,7 +516,7 @@ int main(int argc, char *argv[])
         int option_index = 0;
         int base;
 
-        c = getopt_long(argc, argv, "hvVltp:D:U:a:s:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvVlftp:D:U:a:s:", long_options, &option_index);
 
         if (c == -1)
             break;
@@ -544,6 +548,10 @@ int main(int argc, char *argv[])
                 }
                 break;
 
+            case 'f':
+                first_device = 1;
+                break;
+                
             case 'p':
                 sprintf(portname, "%s", optarg);
                 break;
@@ -628,7 +636,7 @@ int main(int argc, char *argv[])
 
     if (command == CMD_LISTDEV)
     {
-        list_devices();
+        list_devices(NULL);
         goto exitProgram;
     }
 
@@ -657,6 +665,35 @@ int main(int argc, char *argv[])
 
         if (upload_error)
         {
+            goto exitProgram;
+        }
+    }
+
+    if (first_device)
+    {
+        //Set port according to first discovered device
+        
+        int tries = 60;
+        
+        printf("Scanning for device for %i seconds\n", tries);
+        while (tries)
+        {
+            printf(".");
+            fflush(stdout);
+            list_devices(portname);
+            if (*portname != 0)
+            {
+                printf("\n");
+                break; //Device port set
+            }
+            tries--;
+            slp(1000); //Sleep 1s
+        }
+        
+        if (!tries)
+        {
+            printf("\n");
+            printf("Error: Could not find a valid device port!\n");
             goto exitProgram;
         }
     }
