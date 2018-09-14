@@ -297,7 +297,7 @@ int send_file(int addr, int bytes, char *data)
 
 //Print bootloader version
 //Return 1 on sucess, 0 on failure
-int print_version(void)
+int print_bootloader_version(void)
 {
     char wbuf[] = "!#";
     char readdata[128] = "";
@@ -316,7 +316,7 @@ int print_version(void)
         return 0;
     }
 
-    if (!ReadFile(gport, &wbuf, readsize, &ret, NULL))
+    if (!ReadFile(gport, &readdata, readsize, &ret, NULL))
     {
         if (verbose) printf("Version: Error reading port [%i][%lu](%lu)\n",readsize,ret,GetLastError());
         else printf("Version: Error retrieving!\n");
@@ -325,7 +325,7 @@ int print_version(void)
 
     while (readdata[strlen(readdata)-1] == '\n' || readdata[strlen(readdata)-1] == '\r') readdata[strlen(readdata)-1] = 0;
 
-    printf("Version: %s\n",readdata);
+    printf("Bootloader version: %s\n",readdata);
 
     return 1;
 }

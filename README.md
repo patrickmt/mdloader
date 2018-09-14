@@ -38,6 +38,7 @@ Enter mdloader directory where Makefile is located and excute:
 
 This will create a `build` directory with the compiled executable and required applet-*.bin files.  
 Run `./build/mdloader` to test.
+Note that the target MCU applet file must exist in the directory the executable is called from.
 
 ## Usage
 ```

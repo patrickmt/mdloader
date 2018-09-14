@@ -321,7 +321,7 @@ int send_file(int addr, int bytes, char *data)
 
 //Print bootloader version
 //Return 1 on sucess, 0 on failure
-int print_version(void)
+int print_bootloader_version(void)
 {
     char wbuf[] = "!#";
     char readdata[128] = "";
@@ -351,7 +351,7 @@ int print_version(void)
 
     while (readdata[strlen(readdata)-1] == '\n' || readdata[strlen(readdata)-1] == '\r') readdata[strlen(readdata)-1] = 0;
 
-    printf("Version: %s\n",readdata);
+    printf("Bootloader version: %s\n",readdata);
 
     return 1;
 }
@@ -534,7 +534,7 @@ void list_devices(char *first_device)
             printf("Bootloader port listing\n");
             printf("-----------------------------\n");
         }
-        
+
         while ((pdevfile = readdir(pdev)) != NULL)
         {
             if (pdevfile->d_type == DT_CHR)
