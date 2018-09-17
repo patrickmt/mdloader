@@ -977,7 +977,6 @@ int main(int argc, char *argv[])
 
         free_data(data);
 
-        fclose(fIn);
         printf("Complete!\n");
 
         if (restart_after_program)
