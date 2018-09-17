@@ -1,9 +1,9 @@
 OUTNAME = mdloader
 OBJDIR = build
 CC = gcc
-CFLAGS = -Wall -Os -std=gnu99
+CFLAGS = -Wall -std=gnu99
 
-SRCFILES = mdloader_common.c
+SRCFILES = mdloader_common.c mdloader_parser.c
 ifeq ($(OS),Windows_NT)
 SRCFILES += mdloader_win32.c
 else

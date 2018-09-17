@@ -18,6 +18,7 @@
  */
 
 #include "mdloader_common.h"
+#include "mdloader_parser.h"
 
 char verbose;
 char testmode;
@@ -28,6 +29,8 @@ int hex_colw;
 
 //SAM-BA Settings
 mailbox_t initparams;
+mailbox_t appletinfo;   //Applet information reported by binary
+appinfo_t appinfo;      //Applet application information from end of applet binary
 
 mcu_t mcus[] = {
       //Name,       Chip ID     Chip ID,    Program Memory, Data Memory,    Program Addr,   Data Addr
@@ -36,13 +39,15 @@ mcu_t mcus[] = {
 };
 
 mcu_t *mcu; //Pointer to mcus entry if found
+uint32_t bootloader_length;
 
 //Guard against bootloader area writing
 //Return 1 if attempt to write to bootloader area
 //Return 0 otherwise
+//The applet also performs this check
 int check_bootloader_write_attempt(int addr)
 {
-    if (addr < mcu->flash_addr + BOOTLOADER_LENGTH)
+    if (addr < mcu->flash_addr + bootloader_length)
     {
         printf("Attempt to write to bootloader section denied!\n");
         return 1;
@@ -57,7 +62,7 @@ int read_error; //Cleared on read attempt and set to 1 if read fails
 //Return 1 on sucess, 0 on failure
 int print_bootloader_serial(void)
 {
-    int seroffset = read_word(BOOTLOADER_LENGTH - 4);
+    int seroffset = read_word(bootloader_length - 4);
 
     if (read_error)
     {
@@ -67,7 +72,7 @@ int print_bootloader_serial(void)
 
     if (verbose > 0) printf("Serial Number offset: 0x%08x\n", seroffset);
 
-    if (seroffset >= mcu->flash_addr + BOOTLOADER_LENGTH)
+    if (seroffset >= mcu->flash_addr + bootloader_length)
     {
         printf("Serial Number: Not programmed!\n");
         return 0;
@@ -102,7 +107,7 @@ int send_mail(mailbox_t *mail)
     for (byte = 0; byte < sizeof(mailbox_t) / sizeof(int); byte++)
     {
         if (verbose) printf("  ");
-        write_word(APPLET_MAIL+byte*sizeof(int), *pmail);
+        write_word(appinfo.mail_addr+byte*sizeof(int), *pmail);
         pmail++;
     }
     if (verbose) printf("}\n");
@@ -120,7 +125,7 @@ int read_mail(mailbox_t *mail)
     for (byte = 0; byte < sizeof(mailbox_t) / sizeof(int); byte++)
     {
         if (verbose) printf("  ");
-        *pmail = read_word(APPLET_MAIL+byte*sizeof(int));
+        *pmail = read_word(appinfo.mail_addr+byte*sizeof(int));
         pmail++;
     }
     if (verbose) printf("}\n");
@@ -161,14 +166,14 @@ int run_applet(mailbox_t *mail)
     if (command == APPLET_CMD_FULL_ERASE) retries = APPLET_RETRY_ERASE;
     else retries = APPLET_RETRY_NORMAL;
 
-    goto_address(APPLET_ADDR); //Run the applet
+    goto_address(appinfo.load_addr); //Run the applet
 
     if (verbose) printf("RUN: Command out: %08x\n", command);
     do
     {
         slp(APPLET_WAIT_MS); //Allow applet to run
         if (verbose) printf("RUN: Waiting on applet return\n");
-        mail->command = read_word(APPLET_MAIL);
+        mail->command = read_word(appinfo.mail_addr);
     } while ((mail->command != ~command) && retries--);
 
     if (verbose) print_mail(mail);
@@ -551,7 +556,7 @@ int main(int argc, char *argv[])
             case 'f':
                 first_device = 1;
                 break;
-                
+
             case 'p':
                 sprintf(portname, "%s", optarg);
                 break;
@@ -672,9 +677,9 @@ int main(int argc, char *argv[])
     if (first_device)
     {
         //Set port according to first discovered device
-        
+
         int tries = 60;
-        
+
         printf("Scanning for device for %i seconds\n", tries);
         while (tries)
         {
@@ -689,7 +694,7 @@ int main(int argc, char *argv[])
             tries--;
             slp(1000); //Sleep 1s
         }
-        
+
         if (!tries)
         {
             printf("\n");
@@ -718,14 +723,8 @@ int main(int argc, char *argv[])
 
     printf("Found MCU: %s\n", mcu->name);
 
-    if (verbose)
-    {
-        print_version();
-
-        printf("Device ID: %08X\n", mcu->cidr);
-
-        print_bootloader_serial();
-    }
+    print_bootloader_version();
+    if (verbose) printf("Device ID: %08X\n", mcu->cidr);
 
     //Load applet
     FILE *fIn;
@@ -733,7 +732,7 @@ int main(int argc, char *argv[])
     strlower(mcu->name);
 
     sprintf(appletfname, "applet-flash-%s.bin", mcu->name);
-    if (verbose) printf("Applet file: %s\n", appletfname);
+    printf("Applet file: %s\n", appletfname);
 
     fIn = fopen(appletfname, "rb");
     if (!fIn)
@@ -772,12 +771,31 @@ int main(int argc, char *argv[])
             goto closePort;
         }
 
+        if (readbytes < sizeof(appinfo_t))
+        {
+            printf("Error: Applet binary too small!\n");
+            goto closePort;
+        }
+
+        memcpy(&appinfo, appletbuf + readbytes - sizeof(appinfo_t), sizeof(appinfo_t));
+        if (appinfo.magic != 0x4142444D)
+        {
+            printf("Error: Applet info not found!\n");
+            goto closePort;
+        }
+
+        if (verbose)
+        {
+            printf("Applet load address: %08X\n", appinfo.load_addr);
+            printf("Applet mail address: %08X\n", appinfo.mail_addr);
+        }
+
         //printf("Applet data:\n");
         //print_hex_listing(appletbuf, readbytes, 0, 0);
 
         if (verbose) printf("Applet size: %i\n", readbytes);
 
-        if (!send_file(APPLET_ADDR, readbytes, appletbuf))
+        if (!send_file(appinfo.load_addr, readbytes, appletbuf))
         {
             printf("Error: Could not send applet!\n");
             free(appletbuf);
@@ -787,10 +805,10 @@ int main(int argc, char *argv[])
         free(appletbuf);
 
         //printf("Applet data in RAM:\n");
-        //char *data_recv = recv_file(APPLET_ADDR, readbytes);
+        //char *data_recv = recv_file(appinfo.load_addr, readbytes);
         //if (data_recv)
         //{
-        //    print_hex_listing(data_recv, readbytes, 0, APPLET_ADDR);
+        //    print_hex_listing(data_recv, readbytes, 0, appinfo.load_addr);
         //    free(data_recv); //Free memory allocated in recv_file
         //}
     }
@@ -805,7 +823,7 @@ int main(int argc, char *argv[])
 
     if (run_applet(&initparams) == 0)
     {
-        printf("Error: Applet run error!\n");
+        printf("Error: Applet run error for init!\n");
         goto closePort;
     }
 
@@ -822,117 +840,147 @@ int main(int argc, char *argv[])
         printf("\n");
     }
 
+    appletinfo.command = APPLET_CMD_INFO;
+    appletinfo.status = STATUS_BUSY;
+
+    send_mail(&appletinfo);
+
+    if (run_applet(&appletinfo) == 0)
+    {
+        printf("Error: Applet run error for info!\n");
+        goto closePort;
+    }
+
+    printf("Applet Version: %i\n", appletinfo.argument.outputInfo.version_number);
+
     if (initparams.argument.outputInit.memorySize != mcu->flash_size)
     {
         printf("Error: MCU memory size mismatch! (Given %08X, Applet reported %08X)\n", mcu->flash_size, initparams.argument.outputInit.memorySize);
         goto closePort;
     }
 
+    bootloader_length = initparams.argument.outputInit.appStartPage * initparams.argument.outputInit.pageSize;
+
+    if (bootloader_length == 0)
+    {
+        printf("Error: Applet reported zero length bootloader!\n");
+        goto closePort;
+    }
+
+    if (verbose)
+    {
+        printf("Bootloader length: 0x%X\n", bootloader_length);
+        print_bootloader_serial();
+    }
+
     if (command == CMD_DOWNLOAD)
     {
         //Load application
-        int fsize = filesize(fname);
-        if (fsize > mcu->flash_size - (mcu->flash_addr + BOOTLOADER_LENGTH))
+        data_t *data = NULL;
+
+        data = load_file(fname);
+
+        if (!data)
         {
-            printf("Error: Attempt to write outside memory bounds!\n");
+            printf("Error: Could not parse file!\n");
             goto closePort;
         }
 
-        fIn = fopen(fname, "rb");
-        if (!fIn)
+        if (data->addr < (mcu->flash_addr + bootloader_length))
         {
-            printf("Error: Could not open firmware file for read!\n");
+            printf("Error: Attempt to write to bootloader section!\n"); //This check is also performed in the loaded applet
+            free_data(data);
+            goto closePort;
         }
-        else
-        {
-            char *firmware = NULL;
-            int readbytes;
 
-            firmware = (char *)malloc(initparams.argument.outputInit.bufferSize * sizeof(char) + 1);
-            if (!firmware)
+        if (data->size > mcu->flash_size - (mcu->flash_addr + bootloader_length))
+        {
+            printf("Error: Attempt to write outside memory bounds!\n");
+            free_data(data);
+            goto closePort;
+        }
+
+        char *pds = data->data;
+        char *pde = data->data + data->size;
+
+        int readbytes;
+
+        printf("Writing firmware... ");
+        if (testmode)
+            printf("(test mode disables writes) ");
+
+        readbytes = pde - pds < initparams.argument.outputInit.bufferSize ? pde - pds : initparams.argument.outputInit.bufferSize;
+        int memoryOffset = data->addr;
+        while (readbytes > 0)
+        {
+            //printf("Send firmware (%i):\n", readbytes);
+            //print_hex_listing(pds, readbytes, 0, 0);
+
+            if (!send_file(initparams.argument.outputInit.bufferAddress, readbytes, pds))
             {
-                printf("Error: Could not allocate firmware file buffer!\n");
-                fclose(fIn);
+                printf("\nError: Failed write to applet buffer!\n");
+                free_data(data);
                 goto closePort;
             }
 
-            printf("Writing firmware... ");
+            memset(&mail, 0, sizeof(mailbox_t));
+
+            //Note: Testmode will turn writes into reads
             if (testmode)
-                printf("(test mode disables writes) ");
-
-            readbytes = (int)fread(firmware, 1, initparams.argument.outputInit.bufferSize, fIn);
-            int memoryOffset = mcu->flash_addr + BOOTLOADER_LENGTH;
-            while (readbytes > 0)
             {
-                //printf("Send firmware (%i):\n", readbytes);
-                //print_hex_listing(databuf, readbytes, 0, 0);
+                mail.command = APPLET_CMD_READ;
+                mail.argument.inputRead.bufferAddr = initparams.argument.outputInit.bufferAddress;
+                mail.argument.inputRead.bufferSize = readbytes;
+                mail.argument.inputRead.memoryOffset = memoryOffset;
+            }
+            else
+            {
+                mail.command = APPLET_CMD_WRITE;
+                mail.argument.inputWrite.bufferAddr = initparams.argument.outputInit.bufferAddress;
+                mail.argument.inputWrite.bufferSize = readbytes;
+                mail.argument.inputWrite.memoryOffset = memoryOffset;
+            }
+            send_mail(&mail);
+            run_applet(&mail);
 
-                if (!send_file(initparams.argument.outputInit.bufferAddress, readbytes, firmware))
-                {
-                    printf("\nError: Failed write to applet buffer!\n");
-                    free(firmware);
-                    goto closePort;
-                }
-
-                memset(&mail, 0, sizeof(mailbox_t));
-
-                //Note: Testmode will turn writes into reads
-                if (testmode)
-                {
-                    mail.command = APPLET_CMD_READ;
-                    mail.argument.inputRead.bufferAddr = initparams.argument.outputInit.bufferAddress;
-                    mail.argument.inputRead.bufferSize = readbytes;
-                    mail.argument.inputRead.memoryOffset = memoryOffset;
-                }
-                else
-                {
-                    mail.command = APPLET_CMD_WRITE;
-                    mail.argument.inputWrite.bufferAddr = initparams.argument.outputInit.bufferAddress;
-                    mail.argument.inputWrite.bufferSize = readbytes;
-                    mail.argument.inputWrite.memoryOffset = memoryOffset;
-                }
-                send_mail(&mail);
-                run_applet(&mail);
-
-                if (mail.status != STATUS_OK)
-                {
-                    printf("\nError: Applet failed write!\n");
-                    free(firmware);
-                    goto closePort;
-                }
-
-                if (testmode)
-                {
-                    if (mail.argument.outputRead.bytesRead != readbytes)
-                    {
-                        printf("\nError: Sent bytes != written bytes (%i != %i)\n", readbytes, mail.argument.outputRead.bytesRead);
-                        free(firmware);
-                        goto closePort;
-                    }
-                }
-                else
-                {
-                    if (mail.argument.outputWrite.bytesWritten != readbytes)
-                    {
-                        printf("\nError: Sent bytes != written bytes (%i != %i)\n", readbytes, mail.argument.outputWrite.bytesWritten);
-                        free(firmware);
-                        goto closePort;
-                    }
-                }
-
-                memoryOffset += readbytes;
-
-                readbytes = (int)fread(firmware, 1, initparams.argument.outputInit.bufferSize, fIn);
+            if (mail.status != STATUS_OK)
+            {
+                printf("\nError: Applet failed write!\n");
+                free_data(data);
+                goto closePort;
             }
 
-            free(firmware);
+            if (testmode)
+            {
+                if (mail.argument.outputRead.bytesRead != readbytes)
+                {
+                    printf("\nError: Sent bytes != written bytes (%i != %i)\n", readbytes, mail.argument.outputRead.bytesRead);
+                    free_data(data);
+                    goto closePort;
+                }
+            }
+            else
+            {
+                if (mail.argument.outputWrite.bytesWritten != readbytes)
+                {
+                    printf("\nError: Sent bytes != written bytes (%i != %i)\n", readbytes, mail.argument.outputWrite.bytesWritten);
+                    free_data(data);
+                    goto closePort;
+                }
+            }
 
-            fclose(fIn);
-            printf("Complete!\n");
+            memoryOffset += readbytes;
 
-            if (restart_after_program)
-                jump_application();
+            pds += readbytes;
+            readbytes = pde - pds < initparams.argument.outputInit.bufferSize ? pde - pds : initparams.argument.outputInit.bufferSize;
         }
+
+        free_data(data);
+
+        printf("Complete!\n");
+
+        if (restart_after_program)
+            jump_application();
     }
 
     if (command == CMD_UPLOAD)

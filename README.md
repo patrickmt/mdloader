@@ -8,9 +8,9 @@
 
 4. In your terminal, change to the directory where you downloaded the executable and applet-*.bin file(s).
 
-5. **Windows** - Run `mdloader_windows.exe --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware (ending in .bin).  
-**Linux** - Run `mdloader_linux --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware (ending in .bin).  
-**Mac** - Run `mdloader_mac --first --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware (ending in .bin).  
+5. **Windows** - Run `mdloader_windows.exe --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
+**Linux** - Run `mdloader_linux --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
+**Mac** - Run `mdloader_mac --first --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
 
 6. Enjoy (important)
 
@@ -38,6 +38,7 @@ Enter mdloader directory where Makefile is located and excute:
 
 This will create a `build` directory with the compiled executable and required applet-*.bin files.  
 Run `./build/mdloader` to test.
+Note that the target MCU applet file must exist in the directory the executable is called from.
 
 ## Usage
 ```
@@ -60,16 +61,18 @@ Usage: mdloader [options] ...
 
 To write firmware to the device and restart it:
 
-`mdloader --first --download new_firmware.bin --restart`
+`mdloader --first --download new_firmware.hex --restart`
 
 The program will now be searching for your device. Press the reset switch found through the small hole on the back case or by appropriate key sequence to enter programming mode and allow programming to commence.  
+Firmware may be provided as a binary ending in .bin or an Intel HEX format ending in .hex, but .hex is preferred for data integrity.  
 Note that safeguards are in place to prevent overwriting the bootloader section of the device.
 
 To read firmware from the device:
 
 `mdloader --first --upload read_firmware.bin --addr 0x4000 --size 0x10000`
 
-Where --addr and --size are set as desired.
+Where --addr and --size are set as desired.  
+Note the output of reading firmware will be in binary format.
 
 Test mode may be invoked with the --test switch to test operations while preventing firmware modification.  
 Test mode also allows viewing of binary data from a read instead of writing to a file.
