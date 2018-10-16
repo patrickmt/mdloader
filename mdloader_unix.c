@@ -321,7 +321,7 @@ int send_file(int addr, int bytes, char *data)
 
 //Print bootloader version
 //Return 1 on sucess, 0 on failure
-int print_version(void)
+int print_bootloader_version(void)
 {
     char wbuf[] = "!#";
     char readdata[128] = "";
@@ -351,7 +351,7 @@ int print_version(void)
 
     while (readdata[strlen(readdata)-1] == '\n' || readdata[strlen(readdata)-1] == '\r') readdata[strlen(readdata)-1] = 0;
 
-    printf("Version: %s\n",readdata);
+    printf("Bootloader version: %s\n",readdata);
 
     return 1;
 }
@@ -517,7 +517,8 @@ int config_port(void)
 #define FNMAX 255
 
 //List devices which communicate properly
-void list_devices(void)
+//If first_device is not null, store first found device and return
+void list_devices(char *first_device)
 {
     char devdir[] = "/dev";
     DIR *pdev;
@@ -528,8 +529,12 @@ void list_devices(void)
         struct dirent *pdevfile;
         int portcount = 0;
 
-        printf("Bootloader port listing\n");
-        printf("-----------------------------\n");
+        if (first_device == NULL)
+        {
+            printf("Bootloader port listing\n");
+            printf("-----------------------------\n");
+        }
+
         while ((pdevfile = readdir(pdev)) != NULL)
         {
             if (pdevfile->d_type == DT_CHR)
@@ -542,7 +547,14 @@ void list_devices(void)
                     {
                         if (test_mcu(TRUE))
                         {
+                            if (first_device) printf("\n");
                             printf("Device port: %s (%s)\n",pathbuf,mcu->name);
+                            if (first_device != NULL)
+                            {
+                                close_port(TRUE);
+                                strcpy(first_device,pathbuf);
+                                return;
+                            }
                             portcount++;
                         }
                         close_port(TRUE);
@@ -553,8 +565,11 @@ void list_devices(void)
 
         closedir(pdev);
 
-        if (portcount == 0)
-            printf("No devices found!\n");
+        if (first_device == NULL)
+        {
+            if (portcount == 0)
+                printf("No devices found!\n");
+        }
     }
     else
         printf("Error: Could not open dev directory (%s)\n",strerror(errno));

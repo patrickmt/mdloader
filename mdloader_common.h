@@ -22,7 +22,7 @@
 
 #define PROGRAM_NAME  "Massdrop Loader"
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 0
+#define VERSION_MINOR 3 //0-99
 
 #ifdef _WIN32
 #define INITGUID
@@ -55,10 +55,10 @@
 #define TRUE    1
 
 #ifdef _WIN32
-#define slp(x) Sleep(x)
+#define slp(ms) Sleep(ms)
 extern HANDLE gport;
 #else
-#define slp(x) usleep(x * 1000)
+#define slp(ms) usleep(ms * 1000)
 extern int gport;
 #endif
 
@@ -70,7 +70,6 @@ extern int hex_colw;
 
 //These parameters must match the bootloader's
 #define SERIAL_MAX_LENGTH       20
-#define BOOTLOADER_LENGTH       0x4000
 
 //SAM-BA Applet commands
 #define CMD_END                 '#'
@@ -88,11 +87,20 @@ extern int hex_colw;
 #define CMD_READ_VERSION        'V' //V#            V#                                      done
 #define CMD_LOAD_APP            'X' //Load program  (Note: Custom to Massdrop Bootloader)   done
 
+//Applet info consists of 8 32-bit words found at the end of applet binary
+#pragma pack(push, 1)
+typedef struct appinfo_s {
+    uint32_t magic;
+    uint32_t load_addr;
+    uint32_t mail_addr;
+    uint32_t unused[5];
+} appinfo_t;
+#pragma pack(pop)
+
 //SAM-BA Settings
 extern mailbox_t initparams;
-#define RECV_BUF_SIZE 64
-#define APPLET_ADDR 0x20001000      //Note this must match with hard coded applet parameter
-#define APPLET_MAIL 0x20001040      //Note this must match with hard coded applet parameter
+extern mailbox_t appletinfo;
+extern appinfo_t appinfo;
 
 typedef struct mcu_s {
     char name[20];      //MCU Name
@@ -106,6 +114,7 @@ typedef struct mcu_s {
 
 extern mcu_t mcus[];
 extern mcu_t *mcu;
+extern uint32_t bootloader_length;
 int check_bootloader_write_attempt(int addr);
 extern int read_error;
 
@@ -158,7 +167,7 @@ void print_com_example(void);
 int goto_address(int addr);
 char *recv_file(int addr, int bytes);
 int send_file(int addr, int bytes, char *data);
-int print_version(void);
+int print_bootloader_version(void);
 int set_normal_mode(void);
 int jump_application(void);
 int open_port(char *portname, char silent);
@@ -169,7 +178,7 @@ int test_mcu(char silent);
 int filesize(char *fname);
 int read_data(int addr, int readsize);
 int write_data(int addr, int writesize, int data);
-void list_devices(void);
+void list_devices(char *first);
 void strupper(char *str);
 void strlower(char *str);
 

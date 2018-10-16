@@ -77,7 +77,8 @@
 #define APPLET_CMD_READ_FUSES        0x43
 /** Applet erase application section command */
 #define APPLET_CMD_ERASE_APP         0x44
-
+/** Applet information command */               //Massdrop Specific
+#define APPLET_CMD_INFO              0xF0
 
 /** Operation was successful.*/
 #define APPLET_SUCCESS          0x00
@@ -280,6 +281,15 @@ typedef struct mailbox_s {
 
         /** Output arguments for the erase app command */
         /** NONE */
+
+        /** Input arguments for information command */  //Massdrop Specific
+        /** NONE */
+
+        /** Output arguments for information command */  //Massdrop Specific
+        struct {
+            /** Applet version number */
+            uint16_t version_number;
+        } outputInfo;
     } argument;
 } mailbox_t;
 
