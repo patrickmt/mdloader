@@ -7,7 +7,7 @@
 3. In your terminal, change to the directory where you downloaded the executable and applet-*.bin file(s).
 
 4. **Windows** - Run `mdloader_windows.exe --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
-**Linux** - Run `mdloader_linux --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
+**Linux** - Run `mdloader_linux --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware. Depending on your user's permissions, you might have to add your user to the `dialout` group or use `sudo` on the command.  
 **Mac** - Run `mdloader_mac --first --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware. 
   
 5. You should see the message:  
