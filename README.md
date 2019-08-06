@@ -1,18 +1,38 @@
-### tl;dr
+### User instructions
 
 1. Follow the instructions here to download the executable for your operating system: https://github.com/Massdrop/mdloader/releases
 
 2. Plug in your keyboard.
 
-3. Press the reset button on your keyboard.
+3. In your terminal, change to the directory where you downloaded the executable and applet-*.bin file(s).
 
-4. In your terminal, change to the directory where you downloaded the executable and applet-*.bin file(s).
-
-5. **Windows** - Run `mdloader_windows.exe --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
+4. **Windows** - Run `mdloader_windows.exe --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
 **Linux** - Run `mdloader_linux --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
-**Mac** - Run `mdloader_mac --first --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware.  
+**Mac** - Run `mdloader_mac --first --download FILE_NAME --restart`.  If you downloaded with Mac Safari, run `mdloader_mac.dms --first --download FILE_NAME --restart`. Replace "FILE_NAME" with the filename of your compiled firmware. 
+  
+5. You should see the message:  
+```
+Scanning for device for 60 seconds  
+.....
+```
 
-6. Enjoy (important)
+6. Within 60 seconds, press the reset button on your keyboard. For most keyboards running the default firmware, you can hold `Fn` + `b` for half a second and release to reset your keyboard (you will see the LEDs turn off). For CTRL keyboards in the first production run running original firmware or of the first method does not work for you, you will need to use a pin to press the reset button through the hole in the bottom of the keyboard.
+
+7. You should see a series of messages similar to:
+```
+Device port: /dev/cu.usbmodem234431 (SAMD51J18A)
+
+Opening port '/dev/cu.usbmodem234431'... Success!
+Found MCU: SAMD51J18A
+Bootloader version: v2.18Sep  4 2018 16:48:28
+Applet file: applet-flash-samd51j18a.bin
+Applet Version: 1
+Writing firmware... Complete!
+Booting device... Success!
+Closing port... Success!
+```
+
+8. Afterwards, you should see the keyboard's LEDs light up again (if your configuration has LEDs enabled) and the keyboard should respond to typing. Your keyboard is now running the new firmware you specified.
 
 -----
 
@@ -79,4 +99,4 @@ Test mode also allows viewing of binary data from a read instead of writing to a
 
 ## Troubleshooting
 
-Linux: User may need to be added to group dialout to access programming port  
+**Linux**: User may need to be added to group dialout to access programming port  
