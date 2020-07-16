@@ -336,7 +336,7 @@ int test_mcu(char silent)
             continue;
         }
 
-        if (deviceid == mcu->cidr)
+        if ((deviceid & CIDR_DIE_REVISION_MASK) == mcu->cidr)
         {
             if (!silent && verbose) printf("Found supported device ID: %08X\n", deviceid);
             break;

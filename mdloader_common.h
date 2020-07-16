@@ -22,7 +22,7 @@
 
 #define PROGRAM_NAME  "Massdrop Loader"
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 3 //0-99
+#define VERSION_MINOR 4 //0-99
 
 #ifdef _WIN32
 #define INITGUID
@@ -101,6 +101,8 @@ typedef struct appinfo_s {
 extern mailbox_t initparams;
 extern mailbox_t appletinfo;
 extern appinfo_t appinfo;
+
+#define CIDR_DIE_REVISION_MASK 0xFFFFF0FF
 
 typedef struct mcu_s {
     char name[20];      //MCU Name
