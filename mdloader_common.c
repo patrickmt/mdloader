@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018  Massdrop Inc.
+ *  Copyright (C) 2018-2020 Massdrop Inc.
  *
  *  This file is part of Massdrop Loader.
  *
