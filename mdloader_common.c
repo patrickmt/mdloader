@@ -757,7 +757,7 @@ int main(int argc, char *argv[])
     strlower(mcu->name);
 
     //sprintf(appletfname, "applet-flash-%s.bin", mcu->name);
-    sprintf(appletfname, "applet-flash-samd51j19a.bin", mcu->name);  //temporary fix
+    sprintf(appletfname, "applet-mdflash.bin");  //make filename non-dependent upon mcu->name
       
     printf("Applet file: %s\n", appletfname);
 
