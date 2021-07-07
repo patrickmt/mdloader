@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018  Massdrop Inc.
+ *  Copyright (C) 2018-2020 Massdrop Inc.
  *
  *  This file is part of Massdrop Loader.
  *
@@ -35,7 +35,32 @@ appinfo_t appinfo;      //Applet application information from end of applet bina
 mcu_t mcus[] = {
       //Name,       Chip ID     Chip ID,    Program Memory, Data Memory,    Program Addr,   Data Addr
       //            Address                 (FLASH_SIZE)    (HSRAM_SIZE)    (FLASH_ADDR)    (HSRAM_ADDR)
-    { "SAMD51J18A", 0x41002018, 0x60060006, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME54P19A", 0x41002018, 0x61840001, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME54P20A", 0x41002018, 0x61840000, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME54N19A", 0x41002018, 0x61840003, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME54N20A", 0x41002018, 0x61840002, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME53N20A", 0x41002018, 0x61830002, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME53N19A", 0x41002018, 0x61830003, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME53J18A", 0x41002018, 0x61830006, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME53J19A", 0x41002018, 0x61830005, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME53J20A", 0x41002018, 0x61830004, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51N19A", 0x41002018, 0x61810001, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51N20A", 0x41002018, 0x61810000, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51J18A", 0x41002018, 0x61810003, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51J19A", 0x41002018, 0x61810002, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51J20A", 0x41002018, 0x61810004, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51P20A", 0x41002018, 0x60060000, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51P19A", 0x41002018, 0x60060001, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51N19A", 0x41002018, 0x60060003, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51N20A", 0x41002018, 0x60060002, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51J18A", 0x41002018, 0x60060006, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51J19A", 0x41002018, 0x60060005, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51J20A", 0x41002018, 0x60060004, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51G18A", 0x41002018, 0x60060008, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAMD51G19A", 0x41002018, 0x60060007, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51G18A", 0x41002018, 0x61810306, 0x40000,        0x20000,        0x00000000,     0x20000000},
+{"SAME51G19A", 0x41002018, 0x61810305, 0x40000,        0x20000,        0x00000000,     0x20000000},
+
 };
 
 mcu_t *mcu; //Pointer to mcus entry if found
@@ -336,7 +361,7 @@ int test_mcu(char silent)
             continue;
         }
 
-        if (deviceid == mcu->cidr)
+        if ((deviceid & CIDR_DIE_REVISION_MASK) == mcu->cidr)
         {
             if (!silent && verbose) printf("Found supported device ID: %08X\n", deviceid);
             break;
@@ -445,7 +470,7 @@ void display_version(void)
 //Display program copyright
 void display_copyright(void)
 {
-    printf(PROGRAM_NAME "  Copyright (C) 2018  Massdrop Inc.\n");
+    printf(PROGRAM_NAME "  Copyright (C) 2018-2020 Massdrop Inc.\n");
     printf("This program is Free Software and has ABSOLUTELY NO WARRANTY\n");
     printf("\n");
 }
@@ -731,7 +756,9 @@ int main(int argc, char *argv[])
     char appletfname[128] = "";
     strlower(mcu->name);
 
-    sprintf(appletfname, "applet-flash-%s.bin", mcu->name);
+    //sprintf(appletfname, "applet-flash-%s.bin", mcu->name);
+    sprintf(appletfname, "applet-mdflash.bin");  //make filename non-dependent upon mcu->name
+      
     printf("Applet file: %s\n", appletfname);
 
     fIn = fopen(appletfname, "rb");
