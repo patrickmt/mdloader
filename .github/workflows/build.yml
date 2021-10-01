@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - master
+  release:
+    types:
+      - published
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-latest, windows-2016, ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Compile and Package
+      shell: bash
+      run: |
+        make clean all
+        7z a ./build/mdloader-${RUNNER_OS}.zip ./build/mdloader*
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os }}
+        path: build/mdloader*.zip
+
+  publish_release:
+    name: Publish (Release)
+    runs-on: ubuntu-latest
+
+    needs: [build]
+
+    if: github.event.release.tag_name
+
+    steps:
+    - uses: actions/download-artifact@v2
+
+    - uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        name: ${{ github.event.release.name }}
+        files: |
+          ./*/mdloader*
+
+  publish_beta:
+    name: Publish (Beta)
+    runs-on: ubuntu-latest
+
+    needs: [build]
+
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+
+    steps:
+    - uses: actions/download-artifact@v2
+
+    - uses: marvinpinto/action-automatic-releases@latest
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "beta"
+        prerelease: true
+        title: "Latest Beta"
+        files: |
+          ./*/mdloader*
