@@ -17,6 +17,11 @@
  *  along with Massdrop Loader.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define INCBIN_PREFIX
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include "incbin/incbin.h"
+INCBIN(applet, "applet-mdflash.bin");
+
 #include "mdloader_common.h"
 #include "mdloader_parser.h"
 
@@ -751,94 +756,38 @@ int main(int argc, char *argv[])
     print_bootloader_version();
     if (verbose) printf("Device ID: %08X\n", mcu->cidr);
 
-    //Load applet
-    FILE *fIn;
-    char appletfname[128] = "";
-    strlower(mcu->name);
 
-    //sprintf(appletfname, "applet-flash-%s.bin", mcu->name);
-    sprintf(appletfname, "applet-mdflash.bin");  //make filename non-dependent upon mcu->name
-      
-    printf("Applet file: %s\n", appletfname);
-
-    fIn = fopen(appletfname, "rb");
-    if (!fIn)
+    memcpy(&appinfo, applet_data + applet_size - sizeof(appinfo_t), sizeof(appinfo_t));
+    if (appinfo.magic != 0x4142444D)
     {
-        printf("Error: Could not open applet file: %s\n", appletfname);
+        printf("Error: Applet info not found!\n");
         goto closePort;
     }
-    else
+
+    if (verbose)
     {
-        char *appletbuf;
-        int filebytes;
-        int readbytes;
-
-        filebytes = filesize(appletfname);
-        if (filebytes == 0)
-        {
-            printf("Error: Applet file is empty!\n");
-            fclose(fIn);
-            goto closePort;
-        }
-
-        appletbuf = (char *)calloc(filebytes,1);
-        if (appletbuf == NULL)
-        {
-            printf("Error: Could not allocate memory for applet file!\n");
-            fclose(fIn);
-            goto closePort;
-        }
-
-        readbytes = (int)fread(appletbuf, 1, filebytes, fIn);
-        fclose(fIn);
-
-        if (readbytes != filebytes)
-        {
-            printf("Error: Applet read error!\n");
-            goto closePort;
-        }
-
-        if (readbytes < sizeof(appinfo_t))
-        {
-            printf("Error: Applet binary too small!\n");
-            goto closePort;
-        }
-
-        memcpy(&appinfo, appletbuf + readbytes - sizeof(appinfo_t), sizeof(appinfo_t));
-        if (appinfo.magic != 0x4142444D)
-        {
-            printf("Error: Applet info not found!\n");
-            goto closePort;
-        }
-
-        if (verbose)
-        {
-            printf("Applet load address: %08X\n", appinfo.load_addr);
-            printf("Applet mail address: %08X\n", appinfo.mail_addr);
-        }
-
-        //printf("Applet data:\n");
-        //print_hex_listing(appletbuf, readbytes, 0, 0);
-
-        if (verbose) printf("Applet size: %i\n", readbytes);
-
-        if (!send_file(appinfo.load_addr, readbytes, appletbuf))
-        {
-            printf("Error: Could not send applet!\n");
-            free(appletbuf);
-            goto closePort;
-        }
-
-        free(appletbuf);
-
-        //printf("Applet data in RAM:\n");
-        //char *data_recv = recv_file(appinfo.load_addr, readbytes);
-        //if (data_recv)
-        //{
-        //    print_hex_listing(data_recv, readbytes, 0, appinfo.load_addr);
-        //    free(data_recv); //Free memory allocated in recv_file
-        //}
+        printf("Applet load address: %08X\n", appinfo.load_addr);
+        printf("Applet mail address: %08X\n", appinfo.mail_addr);
     }
+
+    //printf("Applet data:\n");
+    //print_hex_listing(appletbuf, readbytes, 0, 0);
+
+    if (verbose) printf("Applet size: %i\n", applet_size);
+
+    if (!send_file(appinfo.load_addr, applet_size, (char*)applet_data))
+    {
+        printf("Error: Could not send applet!\n");
+        goto closePort;
+    }
+
+    //printf("Applet data in RAM:\n");
+    //char *data_recv = recv_file(appinfo.load_addr, readbytes);
+    //if (data_recv)
+    //{
+    //    print_hex_listing(data_recv, readbytes, 0, appinfo.load_addr);
+    //    free(data_recv); //Free memory allocated in recv_file
+    //}
 
     initparams.command = APPLET_CMD_INIT;
     initparams.status = STATUS_BUSY;
