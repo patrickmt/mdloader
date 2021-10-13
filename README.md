@@ -74,6 +74,7 @@ Usage: mdloader [options] ...
   -s --size size                 Read firmware size of <size>
   -D --download file             Write firmware from <file> into device
   -t --test                      Test mode (download/upload writes disabled, upload outputs data to stdout, restart disabled)
+     --ignore-eep                Ignore differences in SmartEEPROM configuration
      --cols count                Hex listing column count <count> [8]
      --colw width                Hex listing column width <width> [4]
      --restart                   Restart device after successful programming

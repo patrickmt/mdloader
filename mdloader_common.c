@@ -29,6 +29,7 @@ char verbose;
 char testmode;
 char first_device;
 int restart_after_program;
+int ignore_smarteeprom_config;
 int hex_cols;
 int hex_colw;
 
@@ -382,6 +383,126 @@ int test_mcu(char silent)
     return 1;
 }
 
+static void sleep_between_writes(void)
+{
+    printf(".");
+    fflush(stdout);
+    slp(SLEEP_BETWEEN_WRITES);
+}
+
+// SmartEEPROM NVMCTRL section
+uint8_t write_user_row(uint32_t* data)
+{
+    //Read the current state of NVMCTRL.CTRLA
+    NVMCTRL_CTRLA_Type ctrla;
+    ctrla.reg = read_half_word(NVMCTRL_CTRLA);
+    if (verbose) printf("NVMCTRL.CTRLA: 0x%04x\n\tAUTOWS: 0x%01x\n\tSUSPEN: 0x%01x\n\tWMODE: 0x%02x\n\tPRM: 0x%02x\n\tRWS: 0x%04x\n\tAHBNS0: 0x%01x\n\tAHBNS1: 0x%01x\n\tCACHEDIS0: 0x%01x\n\tCACHEDIS1: 0x%01x\n", ctrla.reg, ctrla.bit.AUTOWS, ctrla.bit.SUSPEN, ctrla.bit.WMODE, ctrla.bit.PRM, ctrla.bit.RWS, ctrla.bit.AHBNS0, ctrla.bit.AHBNS1, ctrla.bit.CACHEDIS0, ctrla.bit.CACHEDIS1);
+
+    printf("SmartEEPROM: Configuring...");
+
+    //Set WMODE to Manual
+    ctrla.bit.WMODE = NVMCTRL_CTRLA_WMODE_MAN;
+    if (!write_half_word(NVMCTRL_CTRLA, ctrla.reg))
+    {
+        printf("Error: setting NVMCTRL.CTRLA.WMODE to Manual.\n");
+        return 0;
+    }
+    sleep_between_writes();
+
+    // Set user row address
+    if (!write_word(NVMCTRL_ADDR, NVMCTRL_USER))
+    {
+        printf("Error: setting NVMCTRL_ADDR to NVMCTRL_USER (1).\n");
+        return 0;
+    }
+    sleep_between_writes();
+
+    // Erase page
+    NVMCTRL_CTRLB_Type ctrlb;
+    ctrlb.reg = 0;
+    ctrlb.bit.CMD = NVMCTRL_CTRLB_CMD_EP;
+    ctrlb.bit.CMDEX = NVMCTRL_CTRLB_CMDEX_KEY;
+    if (!write_half_word(NVMCTRL_CTRLB, ctrlb.reg))
+    {
+        printf("Error: setting NVMCTRL_CTRLB to 0x%04x (Erase page).\n", ctrlb.reg);
+        return 0;
+    }
+    sleep_between_writes();
+
+    // Page buffer clear
+    ctrlb.reg = 0;
+    ctrlb.bit.CMD = NVMCTRL_CTRLB_CMD_PBC;
+    ctrlb.bit.CMDEX = NVMCTRL_CTRLB_CMDEX_KEY;
+    if (!write_half_word(NVMCTRL_CTRLB, ctrlb.reg))
+    {
+        printf("Error: setting NVMCTRL_CTRLB to 0x%04x (Page buffer clear).\n", ctrlb.reg);
+        return 0;
+    }
+    sleep_between_writes();
+
+    // Write in the write buffer
+    for (int i = 0; i < 4; i++)
+    {
+        if (!write_word(NVMCTRL_USER + i * 4, data[i]))
+        {
+            printf("Error: Unable to write NVMCTRL_USER page %i.\n", i);
+            return 0;
+        }
+        sleep_between_writes();
+    }
+
+    if (!write_word(NVMCTRL_ADDR, NVMCTRL_USER))
+    {
+        printf("Error: setting NVMCTRL_ADDR to NVMCTRL_USER (2).\n");
+        return 0;
+    }
+    sleep_between_writes();
+
+    // Write quad word (128bits)
+    ctrlb.reg = 0;
+    ctrlb.bit.CMD = NVMCTRL_CTRLB_CMD_WQW;
+    ctrlb.bit.CMDEX = NVMCTRL_CTRLB_CMDEX_KEY;
+    if (!write_half_word(NVMCTRL_CTRLB, ctrlb.reg))
+    {
+        printf("Error: setting NVMCTRL_CTRLB to 0x%04x (Write Quad Word).\n", ctrlb.reg);
+        return 0;
+    }
+    sleep_between_writes();
+
+    printf(" Success!\n");
+    return 1;
+}
+
+uint8_t configure_smarteeprom(void)
+{
+    uint32_t user_row[4];
+    for (int i = 0; i < 4; i++)
+    {
+        user_row[i] = read_word(NVMCTRL_USER + i * 4);
+    }
+
+    NVMCTRL_USER_ROW_MAPPING1_Type* puser_row1 = (NVMCTRL_USER_ROW_MAPPING1_Type*)(&user_row[1]);
+
+    if (verbose) printf("SmartEEPROM: config - SBLK: 0x%04x - PSZ: 0x%03x.\n", puser_row1->bit.SBLK, puser_row1->bit.PSZ);
+
+    if(puser_row1->bit.SBLK == SMARTEEPROM_TARGET_SBLK && puser_row1->bit.PSZ == SMARTEEPROM_TARGET_PSZ)
+    {
+        if (verbose) printf("SmartEEPROM: Configured!\n");
+        return 1;
+    }
+
+    if(ignore_smarteeprom_config)
+    {
+        printf("SmartEEPROM: Your settings do not match the recommended values - Some functionality may not work as expected!");
+        return 1;
+    }
+
+    // Set SmartEEPROM Virtual Size.
+    puser_row1->bit.SBLK = SMARTEEPROM_TARGET_SBLK;
+    puser_row1->bit.PSZ = SMARTEEPROM_TARGET_PSZ;
+    return write_user_row(user_row);
+}
+
 //Upper case any lower case characters in a string
 void strlower(char *str)
 {
@@ -495,6 +616,7 @@ void display_help(void)
     printf("  -s --size size                 Read firmware size of <size>\n");
     printf("  -D --download file             Write firmware from <file> into device\n");
     printf("  -t --test                      Test mode (download/upload writes disabled, upload outputs data to stdout, restart disabled)\n");
+    printf("     --ignore-eep                Ignore differences in SmartEEPROM configuration\n");
     printf("     --cols count                Hex listing column count <count> [%i]\n", COLS);
     printf("     --colw width                Hex listing column width <width> [%i]\n", COLW);
     printf("     --restart                   Restart device after successful programming\n");
@@ -507,7 +629,8 @@ void display_help(void)
 //Program command line options
 struct option long_options[] = {
     //Flags
-    { "restart",        no_argument,        &restart_after_program, 1 },
+    { "restart",        no_argument,        &restart_after_program,     1 },
+    { "ignore-eep",     no_argument,        &ignore_smarteeprom_config, 1 },
     //Other
     { "verbose",        no_argument,        0,  'v' },
     { "help",           no_argument,        0,  'h' },
@@ -531,6 +654,7 @@ int main(int argc, char *argv[])
     testmode = 0;
     first_device = 0;
     restart_after_program = 0;
+    ignore_smarteeprom_config = 0;
     hex_cols = COLS;
     hex_colw = COLW;
 
@@ -756,7 +880,13 @@ int main(int argc, char *argv[])
     print_bootloader_version();
     if (verbose) printf("Device ID: %08X\n", mcu->cidr);
 
+    if (!configure_smarteeprom())
+    {
+        printf("Error: Config feature failed!\n");
+        goto closePort;
+    }
 
+    //Load applet
     memcpy(&appinfo, applet_data + applet_size - sizeof(appinfo_t), sizeof(appinfo_t));
     if (appinfo.magic != 0x4142444D)
     {
