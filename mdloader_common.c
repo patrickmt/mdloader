@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018-2020 Massdrop Inc.
+ *  Copyright (C) 2018-2021 Massdrop Inc.
  *
  *  This file is part of Massdrop Loader.
  *
@@ -596,7 +596,7 @@ void display_version(void)
 //Display program copyright
 void display_copyright(void)
 {
-    printf(PROGRAM_NAME "  Copyright (C) 2018-2020 Massdrop Inc.\n");
+    printf(PROGRAM_NAME "  Copyright (C) 2018-2021 Massdrop Inc.\n");
     printf("This program is Free Software and has ABSOLUTELY NO WARRANTY\n");
     printf("\n");
 }
