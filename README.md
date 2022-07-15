@@ -6,21 +6,23 @@
 
 3. In your terminal, change to the directory where you downloaded the executable file.
 
-4. Run the following command:
+4. Move your compiled firmware to the same directory as the executable file.
+
+5. Run the following command:
 ```
 ./mdloader --first --download FILE_NAME --restart
 ```
 **Note**: Replace `FILE_NAME` with the filename of your compiled firmware.
 
-5. You should see the message:
+6. You should see the message:
 ```
 Scanning for device for 60 seconds
 .....
 ```
 
-6. Within 60 seconds, press the reset button on your keyboard. For most keyboards running the default firmware, you can hold `Fn` + `b` for half a second and release to reset your keyboard (you will see the LEDs turn off). For CTRL keyboards in the first production run running original firmware or of the first method does not work for you, you will need to use a pin to press the reset button through the hole in the bottom of the keyboard.
+7. Within 60 seconds, press the reset button on your keyboard. For most keyboards running the default firmware, you can hold `Fn` + `b` for half a second and release to reset your keyboard (you will see the LEDs turn off). For CTRL keyboards in the first production run running original firmware or of the first method does not work for you, you will need to use a pin to press the reset button through the hole in the bottom of the keyboard.
 
-7. You should see a series of messages similar to:
+8. You should see a series of messages similar to:
 ```
 Device port: /dev/cu.usbmodem234431 (SAMD51J18A)
 
@@ -33,7 +35,7 @@ Booting device... Success!
 Closing port... Success!
 ```
 
-8. Afterwards, you should see the keyboard's LEDs light up again (if your configuration has LEDs enabled) and the keyboard should respond to typing. Your keyboard is now running the new firmware you specified.
+9. Afterwards, you should see the keyboard's LEDs light up again (if your configuration has LEDs enabled) and the keyboard should respond to typing. Your keyboard is now running the new firmware you specified.
 
 -----
 
