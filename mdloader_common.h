@@ -204,10 +204,6 @@ void strlower(char *str);
 
 #define SLEEP_BETWEEN_WRITES 200
 
-// Configured for 4096 bytes - DS60001507E-page 653
-#define SMARTEEPROM_TARGET_SBLK 1 // 1 block
-#define SMARTEEPROM_TARGET_PSZ 3  // 32 bytes
-
 typedef union {
     struct {
         uint32_t SBLK          : 4; /* bit: 35:32 - Number of NVM Blocks composing a SmartEEPROM sector   */

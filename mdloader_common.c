@@ -25,6 +25,10 @@ INCBIN(applet, "applet-mdflash.bin");
 #include "mdloader_common.h"
 #include "mdloader_parser.h"
 
+#define SMARTEEPROM_CONFIG 0xaeecffb1
+#define USER_ROW_INVALID 0xFFFFFFFF
+#define USER_ROW_REPAIR 0xfe9a9239
+
 char verbose;
 char testmode;
 char first_device;
@@ -479,13 +483,14 @@ uint8_t configure_smarteeprom(void)
     for (int i = 0; i < 4; i++)
     {
         user_row[i] = read_word(NVMCTRL_USER + i * 4);
+        if (verbose) printf("SmartEEPROM: config - NVMCTRL_USER: 0x%u - 0x%08x.\n", i, user_row[i]);
     }
 
     NVMCTRL_USER_ROW_MAPPING1_Type* puser_row1 = (NVMCTRL_USER_ROW_MAPPING1_Type*)(&user_row[1]);
 
     if (verbose) printf("SmartEEPROM: config - SBLK: 0x%04x - PSZ: 0x%03x.\n", puser_row1->bit.SBLK, puser_row1->bit.PSZ);
 
-    if(puser_row1->bit.SBLK == SMARTEEPROM_TARGET_SBLK && puser_row1->bit.PSZ == SMARTEEPROM_TARGET_PSZ)
+    if ((puser_row1->reg == SMARTEEPROM_CONFIG) && (user_row[0] != USER_ROW_INVALID))
     {
         if (verbose) printf("SmartEEPROM: Configured!\n");
         return 1;
@@ -493,13 +498,20 @@ uint8_t configure_smarteeprom(void)
 
     if(ignore_smarteeprom_config)
     {
-        printf("SmartEEPROM: Your settings do not match the recommended values - Some functionality may not work as expected!");
+        printf("SmartEEPROM: Your settings do not match the recommended values - Some functionality may not work as expected!\n");
         return 1;
     }
 
     // Set SmartEEPROM Virtual Size.
-    puser_row1->bit.SBLK = SMARTEEPROM_TARGET_SBLK;
-    puser_row1->bit.PSZ = SMARTEEPROM_TARGET_PSZ;
+    puser_row1->reg = SMARTEEPROM_CONFIG;
+
+    // Repair if we have a previous failure
+    if(user_row[0] == USER_ROW_INVALID)
+    {
+        printf("SmartEEPROM: Setting additional user row.\n");
+        user_row[0] = USER_ROW_REPAIR;
+    }
+
     return write_user_row(user_row);
 }
 
