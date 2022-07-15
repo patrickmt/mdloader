@@ -22,7 +22,7 @@
 
 #define PROGRAM_NAME  "Massdrop Loader"
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 6 //0-99
+#define VERSION_MINOR 7 //0-99
 
 #ifdef _WIN32
 #define INITGUID
