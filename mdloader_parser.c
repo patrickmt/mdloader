@@ -386,12 +386,14 @@ data_t *load_file(char *fname)
         return NULL;
     }
 
+    data_t * ret = NULL;
     if (ftype == FTYPE_HEX)
-        return parse_hex(rawdata, readbytes);
+        ret = parse_hex(rawdata, readbytes);
     else if (ftype == FTYPE_BIN)
-        return parse_bin(rawdata, readbytes);
+        ret = parse_bin(rawdata, readbytes);
     else
         printf("ERROR: Parser: Unknown file type!\n");
 
-    return NULL;
+    free(rawdata);
+    return ret;
 }

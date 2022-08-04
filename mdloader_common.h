@@ -22,7 +22,7 @@
 
 #define PROGRAM_NAME  "Massdrop Loader"
 #define VERSION_MAJOR 1
-#define VERSION_MINOR 3 //0-99
+#define VERSION_MINOR 7 //0-99
 
 #ifdef _WIN32
 #define INITGUID
@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <getopt.h>
+#include <ctype.h>
 
 //Atmel files
 #include "./atmel/applet.h"
@@ -101,6 +102,8 @@ typedef struct appinfo_s {
 extern mailbox_t initparams;
 extern mailbox_t appletinfo;
 extern appinfo_t appinfo;
+
+#define CIDR_DIE_REVISION_MASK 0xFFFFF0FF
 
 typedef struct mcu_s {
     char name[20];      //MCU Name
@@ -161,6 +164,7 @@ int read_byte(int addr);
 int read_half_word(int addr);
 int read_word(int addr);
 int set_terminal_mode(void);
+uint8_t configure_smarteeprom(void);
 
 //OS specific commands
 void print_com_example(void);
@@ -179,8 +183,68 @@ int filesize(char *fname);
 int read_data(int addr, int readsize);
 int write_data(int addr, int writesize, int data);
 void list_devices(char *first);
+
+// helpers
 void strupper(char *str);
 void strlower(char *str);
+
+// Smart EEPROM specific
+#define NVMCTRL 0x41004000
+#define NVMCTRL_CTRLA (NVMCTRL)
+#define NVMCTRL_CTRLB (NVMCTRL + 4)
+#define NVMCTRL_ADDR (NVMCTRL + 0x14)
+
+#define NVMCTRL_CTRLA_WMODE_MAN 0x0
+#define NVMCTRL_CTRLB_CMDEX_KEY 0xA5
+#define NVMCTRL_CTRLB_CMD_WQW 0x4
+#define NVMCTRL_CTRLB_CMD_PBC 0x15
+#define NVMCTRL_CTRLB_CMD_EP 0x0
+
+#define NVMCTRL_USER 0x00804000
+
+#define SLEEP_BETWEEN_WRITES 200
+
+typedef union {
+    struct {
+        uint32_t SBLK          : 4; /* bit: 35:32 - Number of NVM Blocks composing a SmartEEPROM sector   */
+        uint32_t PSZ           : 3; /* bit: 38:36 - SmartEEPROM Page Size                                 */
+        uint32_t RAM_ECCDIS    : 1; /* bit:    39 - RAM ECC Disable                                       */
+        uint32_t               : 8; /* bit: 47:40 - Factory settings - do not change                      */
+        uint32_t WDT_ENABLE    : 1; /* bit:    48 - WDT Enable at power-on                                */
+        uint32_t WDT_ALWAYS_ON : 1; /* bit:    49 - WDT Always-On at power-on                             */
+        uint32_t WDT_PERIOD    : 4; /* bit: 53:50 - WDT Period at power-on                                */
+        uint32_t WDT_WINDOW    : 4; /* bit: 57:54 - WDT Window mode time-out at power - on                */
+        uint32_t WDT_EWOFFSET  : 4; /* bit: 61:58 - WDT Early Warning Interrupt Time Offset at power - on */
+        uint32_t WDT_WEN       : 1; /* bit:    62 - WDT Window Mode Enable at power - on                  */
+        uint32_t               : 1; /* bit:    63 - Factory settings - do not change                      */
+    } bit;
+    uint32_t reg;
+} NVMCTRL_USER_ROW_MAPPING1_Type;
+
+typedef union {
+    struct {
+        uint16_t           : 2; /* bit:  1:0  Reserved                                                                   */
+        uint16_t AUTOWS    : 1; /* bit:    2  Auto Wait State Enable                                                     */
+        uint16_t SUSPEN    : 1; /* bit:    3  Suspend Enable                                                             */
+        uint16_t WMODE     : 2; /* bit:  5:4  Write Mode                                                                 */
+        uint16_t PRM       : 2; /* bit:  7:6  Power Reduction Mode during Sleep                                          */
+        uint16_t RWS       : 4; /* bit: 11:8  NVM Read Wait States                                                       */
+        uint16_t AHBNS0    : 1; /* bit:   12  Force AHB0 access to NONSEQ, burst transfers are continuously rearbitrated */
+        uint16_t AHBNS1    : 1; /* bit:   13  Force AHB1 access to NONSEQ, burst transfers are continuously rearbitrated */
+        uint16_t CACHEDIS0 : 1; /* bit:   14  AHB0 Cache Disable                                                         */
+        uint16_t CACHEDIS1 : 1; /* bit:   15  AHB1 Cache Disable                                                         */
+    } bit;
+    uint16_t reg;
+} NVMCTRL_CTRLA_Type;
+
+typedef union {
+    struct {
+        uint16_t CMD   : 7; /* bit:  6:0  Command           */
+        uint16_t       : 1; /* bit:    7  Reserved          */
+        uint16_t CMDEX : 8; /* bit: 15:8  Command Execution */
+    } bit;
+    uint16_t reg;
+} NVMCTRL_CTRLB_Type;
 
 #endif //_MDLOADER_COMMON_H
 
